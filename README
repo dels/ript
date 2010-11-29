@@ -1,0 +1,48 @@
+
+
+RIPT (Ruby IPTables)
+
+RIPT is a ruby script building a set of rules for iptables
+configurable by an YAML file. We have written this script to simplify
+the creation of rules for different interfaces and ip addresses. 
+
+The main purpose is making logging configuration as easy as
+possible. Thus for every interface logging for packetes been accepted,
+dropped, rejected etc is configurable both, globally for all
+interfaces and for each interface. 
+
+The precicly configurable logging makes it more easy to detect
+anomalies by ai algorithms which can read the iptables logfile. 
+It has been developed in a students project at the university of
+bremen called FIDIUS. 
+
+
+Configuration
+
+The ript.yaml is the configuration file with lots of comments to make
+configration as easy as possible. 
+
+But to set some system variables like
+"/proc/sys/net/ipv4/icmp_echo_ignore_all" you need to edit the
+ript.rb. These settings are (still) hardcoded but they are kept at the
+upper part of the ript.rb. 
+
+The ript.yaml.example should provide enough information to get this
+script working. I am using this script also in more complex
+configurations like router and VPN-Gateways. If you are interested in
+more sophisticated examples feel free to send me an e-mail. 
+
+
+Files
+
+ript.rb			The ruby script
+ript.yaml		The configuration file (to be created by user)
+ript.yaml.example	An example configuration file
+reset.sh		Shell script which resets all iptables and
+			ip6tables and sets INPUT, OUTPUT and FORWARD
+			to ACCEPT per default
+if-up.d/*		File for debian based linux systems. These
+			files set up all iptables and ip6tables rules
+			on system restarted if configured in ript.yaml
+
+
