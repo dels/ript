@@ -1,8 +1,17 @@
 #
-# The firewall script does not consider things like bytes per connection, 
+# This is the ript configuration file. In the first section you can
+# set pathes to binaries and set up the default behaviour of ript. 
+# In the second part you will find limitation and log settings. 
+# The third part is the per interface configuration. Here you can set
+# up explicit per interface logging and allow different services for
+# each interface in each ip version (4 and 6). Furthermore you can add
+# additional rules like rules for a special user or other hosts.
+#
+# ript does not consider things like bytes per connection, 
 # esp and all this stuff. Thus this configuration does not either.
-# We considered some limitations like packets per second with a non-configurable 
-# burst limit of 10 and some "per interface" options.
+# We consider some limitations like packets per second with a
+# non-configurable burst limit of 10 and some "per interface"
+# options. 
 # 
 
 # executables for iptables and ip6tables
@@ -80,7 +89,8 @@ ipv4:
   # see the &template after eth0: above         
   wlan0: *template
   ppp0: *template
-  # nearly not tuned example
+
+  # more simple example with some tcp, udp and icmp settings only
   eth1:
     service_ports_tcp_out: "20 21 22 43 47 53 80 123 443 587 873 1194 1723 3000 4960 5190 5896 6667 8001 9658"
     service_ports_udp_out: "20 21 22 47 53 67 80 123 443 1194"
@@ -92,9 +102,7 @@ ipv4:
 # of course the ip address is also different.
 ipv6:
   eth0:
-
     log_syn_in: yes
-
     service_ports_tcp_in: "80 443"
     service_ports_tcp_out: "20 21 22 43 47 53 80 123 443 587 1194 3000 4960 5190 5896 6667 8001 9658"
     # we ommit the udp ports in variable since we dont want any udp services to be reachable from outside

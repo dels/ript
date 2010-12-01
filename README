@@ -32,6 +32,17 @@ script working. I am using this script also in more complex
 configurations like router and VPN-Gateways. If you are interested in
 more sophisticated examples feel free to send me an e-mail. 
 
+ATTENTION for remote usage: ript will deny all communication by
+default. Please note that you have to allow all communication
+explicitly be every interface!
+A good start for testing your newly created ript.yaml is this command:
+ruby ript.rb && sleep 30 && sh ./reset.sh
+After executing this command you should see the message
+"commited and saved iptables"
+If you don't you just have to wait about 30 seconds. After that the
+reset.sh file will change the iptables and ip6tables rules to allow
+all communication by default again. 
+
 
 Files
 

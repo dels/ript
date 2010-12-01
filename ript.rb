@@ -533,6 +533,7 @@ class Iptables
     @logging_rules.concat ["-N #{@@LOGGING_INVALID} 2> /dev/null","-A #{@@LOGGING_INVALID} -j LOG --log-level #{@default_log_level} --log-prefix \"#{@@LOGGING_INVALID}:\"", "-A #{@@LOGGING_INVALID} -j DROP"]
 
     # TODO: extend with xmas scan, syn-fin scan, etc etc 
+
   end
 
   #
