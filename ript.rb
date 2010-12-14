@@ -440,10 +440,9 @@ class Iptables
     if @fw.select("/#{ipv}/#{iface}/service_ports_udp_in") and @fw.select("/#{ipv}/#{iface}/service_ports_udp_in").first and @fw.select("/#{ipv}/#{iface}/service_ports_udp_in").first.value
       @fw.select("/#{ipv}/#{iface}/service_ports_udp_in").first.value.split.each do |udp_port|
         # create rule to allow syn packets in and established and related packets in and out for udp on given udp port, iface and address
-        yield "-A INPUT -p udp -m limit --limit #{iface_settings[:max_udp_in_per_second]}/second --limit-burst 10 -m conntrack --ctstate NEW -i #{iface} #{dest_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_in]}"
-        yield "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -p udp -i #{iface} #{dest_ip} --dport #{udp_port} -j #{iface_settings[:log_established]}"
-        yield "-A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -p udp -o #{iface} #{src_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
-      end       
+        yield "-A INPUT -p udp -m limit --limit #{iface_settings[:max_udp_in_per_second]}/second --limit-burst 10 -i #{iface} #{dest_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_in]}"
+        yield "-A OUTPUT -p udp -o #{iface} #{src_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
+      end
     end
     # allow outgoing traffic on ports in @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.select("/#{ipv}/#{iface}/service_ports_udp_out")
     if @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out").first and @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out").first.value
@@ -458,8 +457,7 @@ class Iptables
       @fw.select("/#{ipv}/#{iface}/service_ports_udp_out").first.value.split.each do |udp_port|
         # create rule to allow syn packets out and established and related packets in and out for udp on given udp port, iface and address
         yield "-A OUTPUT -p udp -m limit --limit #{iface_settings[:max_udp_out_per_second]}/second --limit-burst 10 -m conntrack --ctstate NEW -o #{iface} #{src_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_out]}"
-        yield "-A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -p udp -o #{iface} #{src_ip} --dport #{udp_port} -j #{iface_settings[:log_established]}"
-        yield "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -p udp -i #{iface} #{dest_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
+        yield "-A INPUT -p udp -i #{iface} #{dest_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
       end
     end
     # depending on ip version we have to use icmp types. lets find out which one we have to use
