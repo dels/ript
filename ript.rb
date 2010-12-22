@@ -60,8 +60,8 @@ class Iptables
   end
   
   #
-  def initialize config_file
-    config_file ||= "./ript.yaml"
+  def initialize cfg
+    cfg ||= "./ript.yaml"
     @f4 = []
     @f6 = []
     # load config file
