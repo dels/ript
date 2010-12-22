@@ -61,11 +61,7 @@ class Iptables
   
   #
   def initialize config_file
-    unless config_file
-      cfg = "./ript.yaml" 
-    else
-      cfg = config_file
-    end
+    config_file ||= "./ript.yaml"
     @f4 = []
     @f6 = []
     # load config file
