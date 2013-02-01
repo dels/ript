@@ -2,19 +2,19 @@
 
 RIPT (Ruby IPTables)
 
-RIPT is a ruby script building a set of rules for iptables
-configurable by an YAML file. We have written this script to simplify
+RIPT is a ruby script that creates a set of iptables rules
+defineable by an YAML file. We wrote this script to simplify
 the creation of rules for different interfaces and ip addresses. 
 
-The main purpose is making logging configuration as easy as
-possible. Thus for every interface logging for packetes been accepted,
-dropped, rejected etc is configurable both, globally for all
-interfaces and for each interface. 
+The main purpose is to configure rule creating and logging as easy as
+possible. Thus, for packets that has been accepted, dropped, rejected 
+etc. is configurable in both, global for all interfaces and for each 
+interface.
 
 The precicly configurable logging makes it more easy to detect
-anomalies by ai algorithms which can read the iptables logfile. 
+anomalies by AI algorithms that analyze the iptables logfile.
 It has been developed in a students project at the university of
-bremen called FIDIUS. 
+bremen called FIDIUS.
 
 
 Configuration
