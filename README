@@ -3,7 +3,7 @@
 RIPT (Ruby IPTables)
 
 RIPT is a ruby script that creates a set of iptables rules
-defineable by an YAML file. We wrote this script to simplify
+defineable by a JSON file. We wrote this script to simplify
 the creation of rules for different interfaces and ip addresses. 
 
 The main purpose is to configure rule creating and logging as easy as
@@ -19,23 +19,22 @@ bremen called FIDIUS.
 
 Configuration
 
-The ript.yaml is the configuration file with lots of comments to make
-configration as easy as possible. 
+The ript.json is the configuration file hopefully almost self explaining.
 
 But to set some system variables like
 "/proc/sys/net/ipv4/icmp_echo_ignore_all" you need to edit the
 ript.rb. These settings are (still) hardcoded but they are kept at the
 upper part of the ript.rb. 
 
-The ript.yaml.example should provide enough information to get this
+The ript.json.example should provide enough information to get this
 script working. I am using this script also in more complex
-configurations like router and VPN-Gateways. If you are interested in
-more sophisticated examples feel free to send me an e-mail. 
+configurations such as routers and VPN-Gateways. If you are interested in
+more sophisticated examples feel free to e-mail me.
 
 ATTENTION for remote usage: ript will deny all communication by
 default. Please note that you have to allow all communication
 explicitly be every interface!
-A good start for testing your newly created ript.yaml is this command:
+A good start for testing your newly created ript.json is this command:
 ruby ript.rb && sleep 30 && sh ./reset.sh
 After executing this command you should see the message
 "commited and saved iptables"
@@ -47,13 +46,13 @@ all communication by default again.
 Files
 
 ript.rb			The ruby script
-ript.yaml		The configuration file (to be created by user)
-ript.yaml.example	An example configuration file
+ript.json     		The configuration file (to be created by user)
+ript.json.example	An example configuration file
 reset.sh		Shell script which resets all iptables and
 			ip6tables and sets INPUT, OUTPUT and FORWARD
 			to ACCEPT per default
 if-up.d/*		File for debian based linux systems. These
 			files set up all iptables and ip6tables rules
-			on system restarted if configured in ript.yaml
+			on system restarted if configured in ript.json
 
 

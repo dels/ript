@@ -1,0 +1,60 @@
+{
+  "iptables_bin": "/sbin/iptables",
+  "iptables-save_bin": "/sbin/iptables-save",
+  "ip6tables_bin": "/sbin/ip6tables",
+  "ip6tables-save_bin": "/sbin/ip6tables-save",
+  "auto_commit_and_save_rules": "no",
+  "iptables_save_to": "/etc/iptables.rules",
+  "ip6tables_save_to": "/etc/ip6tables.rules",
+  "max_tcp_in_per_second": 10000,
+  "max_tcp_out_per_second": 10000,
+  "max_udp_in_per_second": 10000,
+  "max_udp_out_per_second": 10000,
+  "max_icmp_in_per_second": 10000,
+  "max_icmp_out_per_second": 10000,
+  "allow_localhost_communication": "yes",
+  "log_icmp_in": "no",
+  "log_icmp_out": "no",
+  "log_syn_in": "no",
+  "log_syn_out": "no",
+  "log_established": "no",
+  "log_drop": "yes",
+  "log_rejected": "no",
+  "log_invalid": "no",
+  "deny_with": "drop",
+  "reject_with": "port-unreachable",
+  "ipv4": {
+    "eth0": {
+      "log_syn_in": "yes",
+      "log_syn_out": "yes",
+      "log_drop": "yes",
+      "log_reject": "yes",
+      "log_established": "no",
+      "log_invalid": "yes",
+      "allowed_protocols": "47 142",
+      "service_ports_tcp_in": "",
+      "service_ports_tcp_out": "20 21 22 43 47 53 80 123 443 587 873 1194 1723 3000 4960 5190 5896 6667 8001 9658",
+      "service_ports_udp_in": "",
+      "service_ports_udp_out": "20 21 22 47 53 67 80 123 443 1194",
+      "allowed_icmp_types_in": "0 8 3 4 12",
+      "allowed_icmp_types_out": "0 8 3 4 12",
+      "additional_output_rules": "-m owner --uid 0 -j ACCEPT\n"
+    },
+    "eth1": {
+      "service_ports_tcp_out": "20 21 22 43 47 53 80 123 443 587 873 1194 1723 3000 4960 5190 5896 6667 8001 9658",
+      "service_ports_udp_out": "20 21 22 47 53 67 80 123 443 1194",
+      "allowed_icmp_types_in": "0 8 3 4 12",
+      "allowed_icmp_types_out": "0 8 3 4 12"
+    }
+  },
+  "ipv6": {
+    "eth0": {
+      "log_syn_in": "yes",
+      "service_ports_tcp_in": "80 443",
+      "service_ports_tcp_out": "20 21 22 43 47 53 80 123 443 587 1194 3000 4960 5190 5896 6667 8001 9658",
+      "service_ports_udp_out": "20 21 22 47 53 67 80 123 443 1194",
+      "allowed_icmp_types_in": "1 2 3 4 128 129 133 134 135 138 139 140 141 142 148 149 151 152 153",
+      "allowed_icmp_types_out": "1 2 3 4 128 129 133 134 135 138 139 140 141 142 148 149 151 152 153"
+    }
+  }
+}

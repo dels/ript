@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2010 Dominik Elsbroek. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification, are
@@ -24,14 +25,11 @@
 # authors and should not be interpreted as representing official policies, either expressed
 # or implied, of Dominik Elsbroek. 
 
-require "yaml"
+require "json"
 
 class Iptables
 
-  # hack to get this working with ruby1.8 and ruby 1.9
-  SYCK_MAP = Syck::Map rescue YAML::Syck::Map
 
-  #
   def configure_system
     # we dont need timestamps in tcp
     yield "echo 0 > /proc/sys/net/ipv4/tcp_timestamps"
@@ -61,52 +59,53 @@ class Iptables
   
   #
   def initialize cfg
-    cfg ||= "./ript.yaml"
+    cfg ||= "./ript.json"
     @f4 = []
     @f6 = []
     # load config file
-    raise "configuration file must be readable" unless File.exists? cfg and File.file? cfg and File.readable? cfg
-    raise "could not load configuration file" unless (@fw = YAML::parse_file cfg)
+    raise "configuration file must be readable" unless File.exist? cfg and File.file? cfg and File.readable? cfg
+    raise "could not load configuration file" unless (@fw = JSON.parse(File.read(cfg)))
 
     # we need to have a list of all devices. we will get this list while going through the ip versions
     @list_of_devices = []
-    
+
+
     # read and set basic settings
-    log_level = @fw.select('/log_level')
-    max_tcp_in_per_second = @fw.select('/max_tcp_in_per_second')
-    max_udp_in_per_second  = @fw.select('/max_udp_in_per_second')
-    max_icmp_in_per_second = @fw.select('/max_icmp_in_per_second')
-    max_tcp_out_per_second = @fw.select('/max_tcp_out_per_second')
-    max_udp_out_per_second  = @fw.select('/max_udp_out_per_second')
-    max_icmp_out_per_second = @fw.select('/max_icmp_out_per_second')
+    log_level = @fw['log_level']
+    max_tcp_in_per_second = @fw['max_tcp_in_per_second']
+    max_udp_in_per_second  = @fw['max_udp_in_per_second']
+    max_icmp_in_per_second = @fw['max_icmp_in_per_second']
+    max_tcp_out_per_second = @fw['max_tcp_out_per_second']
+    max_udp_out_per_second  = @fw['max_udp_out_per_second']
+    max_icmp_out_per_second = @fw['max_icmp_out_per_second']
+    
+    @default_log_syn_in = if @fw.has_key?('log_syn_in') && @fw['log_syn_in'].eql?("yes") then true else false end
+    @default_log_syn_out = if @fw.has_key?('log_syn_out') && @fw['log_syn_out'].eql?("yes") then true else false end
+    @default_log_established = if @fw.has_key?('log_established') && @fw['log_established'].eql?("yes") then true else false end
+    @default_log_drop = if @fw.has_key?('log_drop') && @fw['log_drop'].eql?("yes") then true else false end
+    @default_log_rejected = if @fw.has_key?('log_rejected') && @fw['log_rejected'].eql?("yes") then true else false end
+    @default_log_invalid = if @fw.has_key?('log_invalid') && @fw['log_invalid'].eql?("yes") then true else false end
+    @default_log_icmp_in = if @fw.has_key?('log_icmp_in') && @fw['log_icmp_in'].eql?("yes") then true else false end
+    @default_log_icmp_out = if @fw.has_key?('log_icmp_out') && @fw['log_icmp_out'].eql?("yes") then true else false end
 
-    @default_log_syn_in = if @fw.select('/log_syn_in').empty? then false else if @fw.select('/log_syn_in').first.value.eql? "yes" then true else false end end
-    @default_log_syn_out = if @fw.select('/log_syn_out').empty? then false else if @fw.select('/log_syn_out').first.value.eql? "yes" then true else false end end
-    @default_log_established = if @fw.select('/log_established').empty? then false else if @fw.select('/log_established').first.value.eql? "yes" then true else false end end
-    @default_log_drop = if @fw.select('/log_drop').empty? then false else if @fw.select('/log_drop').first.value.eql? "yes" then true else false end end
-    @default_log_rejected = if @fw.select('/log_rejected').empty? then false else if @fw.select('/log_rejected').first.value.eql? "yes" then true else false end end
-    @default_log_invalid = if @fw.select('/log_invalid').empty? then false else if @fw.select('/log_invalid').first.value.eql? "yes" then true else false end end
-    @default_log_icmp_in = if @fw.select('/log_icmp_in').empty? then false else if @fw.select('/log_icmp_in').first.value.eql? "yes" then true else false end end 
-    @default_log_icmp_out = if @fw.select('/log_icmp_out').empty? then false else if @fw.select('/log_icmp_out').first.value.eql? "yes" then true else false end end
-    
-    
-    @default_log_level = if log_level.empty? then "5" else log_level.first.value end
-    @default_max_tcp_in_per_second = if max_tcp_in_per_second.empty? then "10" else max_tcp_in_per_second.first.value end
-    @default_max_tcp_out_per_second = if max_tcp_out_per_second.empty? then "100" else max_tcp_out_per_second.first.value end
-    @default_max_udp_in_per_second = if max_udp_in_per_second.empty? then "10" else max_udp_in_per_second.first.value end
-    @default_max_udp_out_per_second = if max_udp_out_per_second.empty? then "100" else max_udp_out_per_second.first.value end
-    @default_max_icmp_in_per_second = if max_icmp_in_per_second.empty? then "10" else max_icmp_in_per_second.first.value end
-    @default_max_icmp_out_per_second = if max_icmp_out_per_second.empty? then "10" else max_icmp_out_per_second.first.value end
-    
-    @f4_bin = @fw.select('/iptables_bin').first.value
-    @f6_bin = @fw.select('/ip6tables_bin').first.value
 
+    @default_log_level = unless log_level then "5" else log_level end
+    @default_max_tcp_in_per_second = unless max_tcp_in_per_second then "10" else max_tcp_in_per_second end
+    @default_max_tcp_out_per_second = unless max_tcp_out_per_second then "100" else max_tcp_out_per_second end
+    @default_max_udp_in_per_second = unless max_udp_in_per_second then "10" else max_udp_in_per_second end
+    @default_max_udp_out_per_second = unless max_udp_out_per_second then "100" else max_udp_out_per_second end
+    @default_max_icmp_in_per_second = unless max_icmp_in_per_second then "10" else max_icmp_in_per_second end
+    @default_max_icmp_out_per_second = unless max_icmp_out_per_second then "10" else max_icmp_out_per_second end
+    
+    @f4_bin = @fw['iptables_bin']
+    @f6_bin = @fw['ip6tables_bin']
+    
     # add the initial rules
     @f4.concat initialize_rules
     @f6.concat initialize_rules
     @f4.concat create_logging_rules
     @f6.concat create_logging_rules
-
+    
     # create rules for each ip version
     create_rules_for "ipv4" do |rule| 
       @f4 << rule
@@ -123,7 +122,7 @@ class Iptables
 
     # allow localhost communication if desired
     @list_of_devices.uniq!
-    if @fw.select('/allow_localhost_communication').first.value.eql? "yes"
+    if @fw['allow_localhost_communication'].eql?("yes")
       @f4 << "-A INPUT -i lo -j ACCEPT"
       @f6 << "-A INPUT -i lo -j ACCEPT"
       @f4 << "-A OUTPUT -o lo -j ACCEPT"
@@ -135,16 +134,16 @@ class Iptables
 
   #
   def create_deny_rules ipv, iface = nil, iface_settings = nil
+    if iface 
+      cur_iface = @fw[ipv][iface]
+    else
+      cur_iface = @fw
+    end
     my_rules_arr = if ipv.eql? "ipv4" then
                      @f4
                    else
                      @f6
                    end
-    select_path = if ipv and iface then 
-                    "/#{ipv}/#{iface}" 
-                  else 
-                    "" 
-                  end
     iface_in = if iface then
                  "-i #{iface}"
                else
@@ -155,22 +154,22 @@ class Iptables
                else
                  ""
                end
-    deny_with = if @fw.select("#{select_path}/deny_with").first then
-                  @fw.select("#{select_path}/deny_with").first.value.upcase
+    deny_with = if cur_iface.has_key?("deny_with") then
+                  cur_iface["deny_with"].upcase
                 else
-                  @fw.select("/deny_with").first.value.upcase
+                  @fw["deny_with"].upcase
                 end
-    reject_with = if @fw.select("#{select_path}/reject_with").empty? then
-                    if @fw.select("/reject_with").empty? then
-                      ""
-                    else
-                      "--reject-with " << @fw.select("/reject_with").first.value
-                    end
+    reject_with = if cur_iface.has_key?("reject_with") then
+                    " --reject_with " <<  cur_iface["reject_with"].upcase
                   else
-                    "--reject-with " << @fw.select("#{select_path}/reject_with").first.value
+                    if cur_iface.has_key?("reject_with") then
+                      "--reject-with " << cur_iface["reject_with"]
+                    else
+                      ""
+                    end
                   end
     # set DROP or REJECT rules with corresponding logging rules if given
-    if deny_with.eql? "DROP"
+    if deny_with.upcase.eql? "DROP"
       if nil == iface_settings and @default_log_drop
         my_rules_arr << "-A OUTPUT #{iface_out} -j #{@@LOGGING_DROPPED}"
         my_rules_arr << "-A INPUT #{iface_in} -j #{@@LOGGING_DROPPED}"
@@ -204,213 +203,207 @@ class Iptables
 
   #
   def create_rules_for ipv
-    @fw.select("/#{ipv}").each do |interface|
-      next unless interface.class == SYCK_MAP
-      # create rule and flush rule for current interface
-      interface.children_with_index.each do |idx, child|
-        iface = child.value
-        @list_of_devices << iface
-        cur_rule = "#{ipv}-#{iface}"
-        yield "-N #{cur_rule}"
-        yield "-F #{cur_rule}"
+    @fw[ipv].each do |interface|
+      iface = interface[0]
+      @list_of_devices << iface
+      cur_rule = "#{ipv}-#{iface}"
+      cur_iface = @fw[ipv][iface]
+      yield "-N #{cur_rule}"
+      yield "-F #{cur_rule}"
 =begin
-  for each value the user is able to configure in the config file
-  we check if this value is configured in the interface section.
-  if not we take the value from the global configuration which can be either
-  user defined or program default.
+      for each value the user is able to configure in the config file
+      we check if this value is configured in the interface section.
+      if not we take the value from the global configuration which can be either
+      user defined or program default.
 =end
-        iface_settings = Hash.new
-        iface_settings[:max_tcp_in_per_second] = if @fw.select("/#{ipv}/#{iface}/max_tcp_in_per_second").empty? then 
-                                                   @default_max_tcp_in_per_second 
+      iface_settings = Hash.new
+      iface_settings[:max_tcp_in_per_second] = if cur_iface.has_key?("max_tcp_in_per_second") then 
+                                                 cur_iface["max_tcp_in_per_second"]
+                                               else
+                                                 @default_max_tcp_in_per_second
+                                               end
+      iface_settings[:max_udp_in_per_second]  = if cur_iface.has_key?("max_udp_in_per_second") then 
+                                                  cur_iface["max_udp_in_per_second"]
+                                                else
+                                                  @default_max_udp_in_per_second
+                                                end
+      iface_settings[:max_icmp_in_per_second] = if cur_iface.has_key?("max_icmp_out_per_second") then
+                                                  cur_iface["max_icmp_out_per_second"]
+                                                else
+                                                  @default_max_icmp_in_per_second
+                                                end
+      iface_settings[:max_tcp_out_per_second] = if cur_iface.has_key?("max_tcp_out_per_second") then 
+                                                  cur_iface["max_tcp_out_per_second"]
+                                                else
+                                                  @default_max_tcp_in_per_second
+                                                end
+      iface_settings[:max_udp_out_per_second]  = if cur_iface.has_key?("max_udp_out_per_second") then 
+                                                   cur_iface["max_udp_out_per_second"]
                                                  else
-                                                   @fw.select("/#{ipv}/#{iface}/max_tcp_in_per_second").first.value
+                                                   @default_max_udp_in_per_second
                                                  end
-        
-        iface_settings[:max_udp_in_per_second]  = if @fw.select("/#{ipv}/#{iface}/max_udp_in_per_second").empty? then 
-                                                    @default_max_udp_in_per_second 
-                                                  else
-                                                    @fw.select("/#{ipv}/#{iface}/max_udp_in_per_second").first.value
-                                                  end
-        iface_settings[:max_icmp_in_per_second] = if @fw.select("/#{ipv}/#{iface}/max_icmp_in_per_second").empty? then 
-                                                    @default_max_icmp_in_per_second 
-                                                  else
-                                                    @fw.select("/#{ipv}/#{iface}/max_icmp_in_per_second").first.value
-                                                  end
-        
-        iface_settings[:max_tcp_out_per_second] = if @fw.select("/#{ipv}/#{iface}/max_tcp_out_per_second").empty? then 
-                                                    @default_max_tcp_out_per_second 
-                                                  else
-                                                    @fw.select("/#{ipv}/#{iface}/max_tcp_out_per_second").first.value
-                                                  end
-        
-        iface_settings[:max_udp_out_per_second]  = if @fw.select("/#{ipv}/#{iface}/max_udp_out_per_second").empty? then 
-                                                     @default_max_udp_out_per_second 
-                                                   else
-                                                     @fw.select("/#{ipv}/#{iface}/max_udp_out_per_second").first.value
-                                                   end
-        iface_settings[:max_icmp_out_per_second] = if @fw.select("/#{ipv}/#{iface}/max_icmp_out_per_second").empty? then 
-                                                     @default_max_icmp_out_per_second 
-                                                   else
-                                                     @fw.select("/#{ipv}/#{iface}/max_icmp_out_per_second").first.value
-                                                   end
-        iface_settings[:log_icmp_in] = unless @fw.select("/#{ipv}/#{iface}/log_icmp_in") and @fw.select("/#{ipv}/#{iface}/log_icmp_in").first then
-                                         if @default_log_icmp_in then
-                                           @@LOGGING_ICMP_IN
-                                         else
-                                           "ACCEPT"
-                                         end
+      iface_settings[:max_icmp_out_per_second] = if cur_iface.has_key?("max_icmp_out_per_second") then
+                                                   cur_iface["max_icmp_out_per_second"]
+                                                 else
+                                                   @default_max_icmp_in_per_second
+                                                 end
+      
+      iface_settings[:log_icmp_in] = unless cur_iface.has_key?("log_icmp_in") then
+                                       if @default_log_icmp_in then
+                                         @@LOGGING_ICMP_IN
                                        else
-                                         if @fw.select("/#{ipv}/#{iface}/log_icmp_in").first.value.eql? "yes" then
-                                           @@LOGGING_ICMP_IN
-                                         else
-                                           "ACCEPT"
-                                         end
+                                         "ACCEPT"
                                        end
-        iface_settings[:log_icmp_out] = unless @fw.select("/#{ipv}/#{iface}/log_icmp_out") and @fw.select("/#{ipv}/#{iface}/log_icmp_out").first then
-                                          if @default_log_icmp_out then
-                                            @@LOGGING_ICMP_OUT
-                                          else
-                                            "ACCEPT"
-                                          end
-                                        else
-                                          if @fw.select("/#{ipv}/#{iface}/log_icmp_out").first.value.eql? "yes" then
-                                            @@LOGGING_ICMP_OUT
-                                          else
-                                            "ACCEPT"
-                                          end
-                                        end
-        iface_settings[:log_syn_in] = unless @fw.select("/#{ipv}/#{iface}/log_syn_in") and @fw.select("/#{ipv}/#{iface}/log_syn_in").first then
-                                        if @default_log_syn_in then
-                                          @@LOGGING_ACCEPTED_SYN_IN
+                                     else 
+                                       if cur_iface["log_icmp_in"].eql?("yes") then
+                                         @@LOGGING_ICMP_IN
+                                       else
+                                         "ACCEPT"
+                                       end
+                                     end
+      iface_settings[:log_icmp_out] = unless cur_iface.has_key?("log_icmp_out") then
+                                        if @default_log_icmp_out then
+                                          @@LOGGING_ICMP_OUT
                                         else
                                           "ACCEPT"
                                         end
-                                      else
-                                        if @fw.select("/#{ipv}/#{iface}/log_syn_in").first.value.eql?  "yes" then
-                                          @@LOGGING_ACCEPTED_SYN_IN
+                                      else 
+                                        if cur_iface["log_icmp_out"].eql?("yes") then
+                                          @@LOGGING_ICMP_OUT
                                         else
                                           "ACCEPT"
                                         end
                                       end
-        
-        iface_settings[:log_syn_out] = unless @fw.select("/#{ipv}/#{iface}/log_syn_out") and @fw.select("/#{ipv}/#{iface}/log_syn_out").first then
-                                         if @default_log_syn_out then
-                                           @@LOGGING_ACCEPTED_SYN_OUT
-                                         else
-                                           "ACCEPT"
-                                         end
-                                       else
-                                         if @fw.select("/#{ipv}/#{iface}/log_syn_out").first.value.eql? "yes" then
-                                           @@LOGGING_ACCEPTED_SYN_OUT
-                                         else 
-                                           "ACCEPT"
-                                         end
-                                       end
-        iface_settings[:log_established] = unless @fw.select("/#{ipv}/#{iface}/log_established") and @fw.select("/#{ipv}/#{iface}/log_established").first then
-                                             if @default_log_established then
-                                               @@LOGGING_ESTABLISHED
-                                             else
-                                               "ACCEPT"
-                                             end
-                                           else
-                                             if @fw.select("/#{ipv}/#{iface}/log_established").first.value.eql? "yes" then
-                                               @@LOGGING_ESTABLISHED
-                                             else 
-                                               "ACCEPT"
-                                             end
-                                           end
-        iface_settings[:log_drop] = unless @fw.select("/#{ipv}/#{iface}/log_drop") and @fw.select("/#{ipv}/#{iface}/log_drop").first  then
-                                      if @default_log_drop then
-                                        @@LOGGING_DROPPED
+      iface_settings[:log_syn_in] = unless cur_iface.has_key?("log_syn_in") then
+                                      if @default_log_syn_in then
+                                        @@LOGGING_ACCEPTED_SYN_IN
                                       else
-                                        "DROP"
+                                        "ACCEPT"
                                       end
                                     else
-                                      if @fw.select("/#{ipv}/#{iface}/log_drop").first.value.eql? "yes" then
-                                        @@LOGGING_DROPPED
-                                      else 
-                                        "DROP"
+                                      if cur_iface["log_syn_in"].eql?("yes") then
+                                        @@LOGGING_ACCEPTED_SYN_IN
+                                      else
+                                        "ACCEPT"
                                       end
                                     end
-        iface_settings[:log_reject] = unless @fw.select("/#{ipv}/#{iface}/log_rejected") and @fw.select("/#{ipv}/#{iface}/log_rejected").first then
-                                        if @default_log_rejected then
-                                          @@LOGGING_REJECTED
-                                        else
-                                          "REJECT"
-                                        end
-                                      else
-                                        if @fw.select("/#{ipv}/#{iface}/log_rejected").first.value.eql? "yes" then
-                                          @@LOGGING_REJECTED
-                                        else 
-                                          "REJECT"
-                                        end
-                                      end
-        iface_settings[:log_invalid] = unless @fw.select("/#{ipv}/#{iface}/log_invalid") and @fw.select("/#{ipv}/#{iface}/log_invalid").first then
-                                         if @default_log_invalid then
-                                           @@LOGGING_INVALID
-                                         else 
-                                           "DROP"
-                                         end
+      
+      iface_settings[:log_syn_out] = unless cur_iface.has_key?("log_syn_out") then
+                                       if @default_log_syn_out then
+                                         @@LOGGING_ACCEPTED_SYN_OUT        
                                        else
-                                        if @fw.select("/#{ipv}/#{iface}/log_invalid").first.value.eql? "yes" then
-                                          @@LOGGING_INVALID
-                                        else
-                                          "DROP"
-                                        end
+                                         "ACCEPT"
                                        end
-        
-        # create rules to check if traffic is somehow invalid
-        check_flags("#{cur_rule}-bad_traffic", iface, iface_settings[:log_invalid]).each do |bad_flag_rule|
-          yield bad_flag_rule
-        end
-        # and check egress and ingress traffic for that bad traffic
-        yield "-A INPUT -j #{cur_rule}-bad_traffic"
-        yield "-A OUTPUT -j #{cur_rule}-bad_traffic"
-        
-        # adding custom rules for output
-        if @fw.select("/#{ipv}/#{iface}/additional_output_rules") and @fw.select("/#{ipv}/#{iface}/additional_output_rules").first
-          @fw.select("/#{ipv}/#{iface}/additional_output_rules").first.value.split("\n").each do |val|
-            yield "-A OUTPUT #{val}"
-          end
-        end
-        # adding custom rules for input
-        if @fw.select("/#{ipv}/#{iface}/additional_input_rules") and @fw.select("/#{ipv}/#{iface}/additional_input_rules").first
-          @fw.select("/#{ipv}/#{iface}/additional_input_rules").first.value.split("\n").each do |val|
-            yield "-A INPUT #{val}"
-          end
-        end
-        # adding custom rules for forwarding
-        if @fw.select("/#{ipv}/#{iface}/additional_forward_rules") and @fw.select("/#{ipv}/#{iface}/additional_forward_rules").first
-          @fw.select("/#{ipv}/#{iface}/additional_forward_rules").first.value.split("\n").each do |val|
-            yield "-A FORWARD #{val}"
-          end
-        end
-
-        # check if protocols are set to be allowd
-        unless @fw.select("/#{ipv}/#{iface}/allowed_protocols").empty?
-          @fw.select("/#{ipv}/#{iface}/allowed_protocols").first.value.split.each do |proto|
-            create_rule_for_proto iface_settings, ipv, iface, proto do |proto_rule|
-              yield proto_rule
-            end
-          end
-        end
-                
-        # if we dont have any ip set for this interface
-        if @fw.select("/#{ipv}/#{iface}/ip").empty? or @fw.select("/#{ipv}/#{iface}/ip").first.value.empty?
-          create_rules_for_ip(iface_settings, ipv, iface) do |rule| 
-            yield rule
-          end
-        else
-          @fw.select("/#{ipv}/#{iface}/ip").first.value.split.each do |cur_ip|
-            src_ip_str = "-s #{cur_ip}"
-            dest_ip_str = "-d #{cur_ip}"
-            create_rules_for_ip(iface_settings, ipv, iface, src_ip_str, dest_ip_str) do |rule|
-              yield rule  
-            end
-          end
-        end
-        create_deny_rules ipv, iface, iface_settings
+                                     else
+                                       if cur_iface["log_syn_out"].eql?("yes") then
+                                         @@LOGGING_ACCEPTED_SYN_OUT        
+                                       else
+                                         "ACCEPT"
+                                       end
+                                     end
+      iface_settings[:log_established] = unless cur_iface.has_key?("log_established") then
+                                           if @default_log_established then
+                                             @@LOGGING_ESTABLISHED
+                                           else
+                                             "ACCEPT"
+                                           end
+                                         else
+                                           if cur_iface["log_established"].eql?("yes") then
+                                             @@LOGGING_ESTABLISHED
+                                           else
+                                             "ACCEPT"
+                                           end
+                                         end
+      iface_settings[:log_drop] = unless cur_iface.has_key?("log_drop") then
+                                    if @default_log_drop then
+                                      @@LOGGING_DROPPED
+                                    else
+                                      "DROP"
+                                    end
+                                  else
+                                    if cur_iface["log_drop"].eql?("yes") then
+                                      @@LOGGING_DROPPED
+                                    else
+                                      "DROP"
+                                    end
+                                  end
+      iface_settings[:log_reject] = unless cur_iface.has_key?("log_rejected") then
+                                      if @default_log_rejected then
+                                        @@LOGGING_REJECTED
+                                      else
+                                        "REJECT"
+                                      end
+                                    else
+                                      if cur_iface["log_rejected"].eql?("yes") then
+                                        @@LOGGING_REJECTED
+                                      else
+                                        "REJECT"
+                                      end
+                                    end
+      iface_settings[:log_invalid] = unless cur_iface.has_key?("log_invalid") then
+                                       if @default_log_invalid then
+                                         @@LOGGING_INVALID
+                                       else
+                                         "DROP"
+                                       end
+                                     else
+                                       if cur_iface["log_invalid"].eql?("yes") then
+                                         @@LOGGING_INVALID
+                                       else
+                                         "DROP"
+                                       end
+                                     end
+      # create rules to check if traffic is somehow invalid
+      check_flags("#{cur_rule}-bad_traffic", iface, iface_settings[:log_invalid]).each do |bad_flag_rule|
+        yield bad_flag_rule
       end
+      # and check egress and ingress traffic for that bad traffic
+      yield "-A INPUT -j #{cur_rule}-bad_traffic"
+      yield "-A OUTPUT -j #{cur_rule}-bad_traffic"
+      
+      # adding custom rules for output
+      if cur_iface.has_key?("additional_output_rules")
+        cur_iface["additional_output_rules"].split("\n").each do |val|
+          yield "-A OUTPUT #{val}"
+          end
+      end
+      # adding custom rules for input
+      if cur_iface.has_key?("additional_input_rules")
+        cur_iface["additional_input_rules"].split("\n").each do |val|
+          yield "-A INPUT #{val}"
+        end
+      end
+      # adding custom rules for forwarding
+      if cur_iface.has_key?("additional_forward_rules")
+        cur_iface["additional_forward_rules"].split("\n").each do |val|
+          yield "-A FORWARD #{val}"
+        end
+      end
+      
+      # check if protocols are set to be allowd
+      if cur_iface.has_key?("allowed_protocols")
+        cur_iface["allowed_protocols"].split.each do |proto|
+          create_rule_for_proto iface_settings, ipv, iface, proto do |proto_rule|
+            yield proto_rule
+          end
+        end
+      end
+      
+      # if we dont have any ip set for this interface
+      unless cur_iface.has_key?("ip")
+        create_rules_for_ip(iface_settings, ipv, iface) do |rule| 
+          yield rule
+        end
+      else
+        cur_iface["ip"].split.each do |cur_ip|
+          src_ip_str = "-s #{cur_ip}"
+          dest_ip_str = "-d #{cur_ip}"
+          create_rules_for_ip(iface_settings, ipv, iface, src_ip_str, dest_ip_str) do |rule|
+            yield rule  
+          end
+        end
+      end
+      create_deny_rules ipv, iface, iface_settings
     end
   end
 
@@ -424,33 +417,34 @@ class Iptables
   
   #
   def create_rules_for_ip iface_settings, ipv, iface, src_ip = nil, dest_ip = nil
+    cur_iface = @fw[ipv][iface]
     # allow incoming traffic on ports in @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.select("/#{ipv}/#{iface}/service_ports_udp_out")
-    if @fw.select("/#{ipv}/#{iface}/service_ports_tcp_in") and @fw.select("/#{ipv}/#{iface}/service_ports_tcp_in").first and @fw.select("/#{ipv}/#{iface}/service_ports_tcp_in").first.value
-      @fw.select("/#{ipv}/#{iface}/service_ports_tcp_in").first.value.split.each do |tcp_port|
+    if cur_iface.has_key?("service_ports_tcp_in")
+      cur_iface["service_ports_tcp_in"].split.each do |tcp_port|
         # create rule to allow syn packets in and established and related packets in and out for tcp on given tcp port, iface and address
         yield "-A INPUT -p tcp -m limit --limit #{iface_settings[:max_tcp_in_per_second]}/second --limit-burst 10 -m conntrack --ctstate NEW -i #{iface} #{dest_ip} --dport #{tcp_port} -j #{iface_settings[:log_syn_in]}"
         yield "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -i #{iface} #{dest_ip} --dport #{tcp_port} -j #{iface_settings[:log_established]}"
         yield "-A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -o #{iface} #{src_ip} --sport #{tcp_port} -j #{iface_settings[:log_established]}"
       end
     end
-    if @fw.select("/#{ipv}/#{iface}/service_ports_udp_in") and @fw.select("/#{ipv}/#{iface}/service_ports_udp_in").first and @fw.select("/#{ipv}/#{iface}/service_ports_udp_in").first.value
-      @fw.select("/#{ipv}/#{iface}/service_ports_udp_in").first.value.split.each do |udp_port|
+    if cur_iface.has_key?("service_ports_udp_in")
+      cur_iface["service_ports_udp_in"].split.each do |udp_port|
         # create rule to allow packets in and out for udp on given udp port, iface and address
         yield "-A INPUT -p udp -m limit --limit #{iface_settings[:max_udp_in_per_second]}/second --limit-burst 10 -i #{iface} #{dest_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_in]}"
         yield "-A OUTPUT -p udp -o #{iface} #{src_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
       end
     end
     # allow outgoing traffic on ports in @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.select("/#{ipv}/#{iface}/service_ports_udp_out")
-    if @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out").first and @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out").first.value
-      @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out").first.value.split.each do |tcp_port|
+    if cur_iface.has_key?("service_ports_tcp_out")
+      cur_iface["service_ports_tcp_out"].split.each do |tcp_port|
         # create rule to allow syn packets out and established and related packets in and out for tcp on given udp port, iface and address
         yield "-A OUTPUT -p tcp -m limit --limit #{iface_settings[:max_tcp_out_per_second]}/second --limit-burst 10 -m conntrack --ctstate NEW -o #{iface} #{src_ip} --dport #{tcp_port} -j #{iface_settings[:log_syn_out]}"
         yield "-A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -o #{iface} #{src_ip} --dport #{tcp_port} -j #{iface_settings[:log_established]}"
         yield "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -i #{iface} #{dest_ip} --sport #{tcp_port} -j #{iface_settings[:log_established]}"
       end
     end
-    if @fw.select("/#{ipv}/#{iface}/service_ports_udp_out") and @fw.select("/#{ipv}/#{iface}/service_ports_udp_out").first and @fw.select("/#{ipv}/#{iface}/service_ports_udp_out").first.value
-      @fw.select("/#{ipv}/#{iface}/service_ports_udp_out").first.value.split.each do |udp_port|
+    if cur_iface.has_key?("service_ports_udp_out")
+      cur_iface["service_ports_udp_out"].split.each do |udp_port|
         # create rule to allow packets in and out for udp on given udp port, iface and address
         yield "-A OUTPUT -p udp -m limit --limit #{iface_settings[:max_udp_out_per_second]}/second --limit-burst 10 -o #{iface} #{src_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_out]}"
         yield "-A INPUT -p udp -i #{iface} #{dest_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
@@ -463,13 +457,13 @@ class Iptables
                                "-p icmp --icmp-type "
                              end
     # allow icmp traffic in and out
-    if @fw.select("/#{ipv}/#{iface}/allowed_icmp_types_in").first and @fw.select("/#{ipv}/#{iface}/allowed_icmp_types_in").first.value
-      @fw.select("/#{ipv}/#{iface}/allowed_icmp_types_in").first.value.split.each do |icmp_type|
+    if cur_iface.has_key?("allowed_icmp_types_in")
+      cur_iface["allowed_icmp_types_in"].split.each do |icmp_type|
         yield "-A INPUT #{ipv_depending_icmp_str} #{icmp_type} -i #{iface} -m limit --limit #{iface_settings[:max_icmp_in_per_second]}/minute --limit-burst 10 -j #{iface_settings[:log_icmp_in]}"
       end
     end
-    if @fw.select("/#{ipv}/#{iface}/allowed_icmp_types_out").first and @fw.select("/#{ipv}/#{iface}/allowed_icmp_types_out").first.value
-      @fw.select("/#{ipv}/#{iface}/allowed_icmp_types_out").first.value.split.each do |icmp_type|
+    if cur_iface.has_key?("allowed_icmp_types_out")
+      cur_iface["allowed_icmp_types_out"].split.each do |icmp_type|
         yield "-A OUTPUT #{ipv_depending_icmp_str} #{icmp_type} -o #{iface} -m limit --limit #{iface_settings[:max_icmp_out_per_second]}/minute --limit-burst 10 -j #{iface_settings[:log_icmp_out]}"
       end
     end
@@ -512,7 +506,7 @@ class Iptables
     @logging_rules.concat ["-N #{@@LOGGING_ICMP_IN} 2> /dev/null","-A #{@@LOGGING_ICMP_IN} -j LOG --log-level #{@default_log_level} --log-prefix \"#{@@LOGGING_ICMP_IN}:\"", "-A #{@@LOGGING_ICMP_IN} -j ACCEPT"]
     # add icmp out
     @logging_rules.concat ["-N #{@@LOGGING_ICMP_OUT} 2> /dev/null","-A #{@@LOGGING_ICMP_OUT} -j LOG --log-level #{@default_log_level} --log-prefix \"#{@@LOGGING_ICMP_OUT}:\"", "-A #{@@LOGGING_ICMP_OUT} -j ACCEPT"]
-
+    
     # add accepted logging
     @logging_rules.concat ["-N #{@@LOGGING_ESTABLISHED} 2> /dev/null","-A #{@@LOGGING_ESTABLISHED} -j LOG --log-level #{@default_log_level} --log-prefix \"#{@@LOGGING_ESTABLISHED}:\"", "-A #{@@LOGGING_ESTABLISHED} -j ACCEPT"]
     # add accepted syn in logging
@@ -525,19 +519,18 @@ class Iptables
     @logging_rules.concat ["-N #{@@LOGGING_DROPPED} 2> /dev/null","-A #{@@LOGGING_DROPPED} -j LOG --log-level #{@default_log_level} --log-prefix \"#{@@LOGGING_DROPPED}:\"", "-A #{@@LOGGING_DROPPED} -j DROP"]
     # add invalid logging
     @logging_rules.concat ["-N #{@@LOGGING_INVALID} 2> /dev/null","-A #{@@LOGGING_INVALID} -j LOG --log-level #{@default_log_level} --log-prefix \"#{@@LOGGING_INVALID}:\"", "-A #{@@LOGGING_INVALID} -j DROP"]
-
+    
     # TODO: extend with xmas scan, syn-fin scan, etc etc 
-
   end
 
   #
   def to_s
-    if @fw.select("/auto_commit_and_save_rules") and @fw.select("/auto_commit_and_save_rules").first and @fw.select("/auto_commit_and_save_rules").first.value.eql? "yes" 
+    if @fw.has_key?("auto_commit_and_save_rules") and @fw["auto_commit_and_save_rules"].eql?("yes")
       # get settings from config
-      ipt_save_bin = @fw.select("/iptables-save_bin").first.value
-      ip6t_save_bin = @fw.select("/ip6tables-save_bin").first.value
-      ipt_save_to = @fw.select("/iptables_save_to").first.value
-      ip6t_save_to = @fw.select("/ip6tables_save_to").first.value
+      ipt_save_bin = @fw["iptables-save_bin"]
+      ip6t_save_bin = @fw["ip6tables-save_bin"]
+      ipt_save_to = @fw["iptables_save_to"]
+      ip6t_save_to = @fw["ip6tables_save_to"]
       # execute rules
       configure_system do |sys|
         system("#{sys}")
@@ -552,30 +545,30 @@ class Iptables
       system("#{ipt_save_bin} > #{ipt_save_to}")
       system("#{ip6t_save_bin} > #{ip6t_save_to}")
       return "commited and saved iptables"
-    else
-      res = "#!/bin/sh\n"
-      res << "\n# printing iptables\n\n"
-      configure_system do |sys|
-        res << "#{sys}\n"
-      end
-      @f4.each do |rule|
-        res << "#{@f4_bin} #{rule}\n"
-      end
-      res << "\n# printing ip6tables\n\n"
-      @f6.each do |rule|
-        res << "#{@f6_bin} #{rule}\n"
-      end
-      res
     end
+    res = "#!/bin/sh\n"
+    res << "\n# printing iptables\n\n"
+    configure_system do |sys|
+      res << "#{sys}\n"
+    end
+    @f4.each do |rule|
+      res << "#{@f4_bin} #{rule}\n"
+    end
+    res << "\n# printing ip6tables\n\n"
+    @f6.each do |rule|
+      res << "#{@f6_bin} #{rule}\n"
+    end
+    res
   end
 end
-
 
 if __FILE__ == $0
   begin
-  fw = Iptables.new ARGV[0]
+    fw = Iptables.new ARGV[0]
   rescue Exception=>e
-    puts e.to_s
+    puts "#{ e.message } - (#{ e.class })" << "\n" << (e.backtrace or []).join("\n")
   end
   puts fw.to_s
 end
+
+
