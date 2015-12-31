@@ -363,14 +363,30 @@ class Iptables
       
       # adding custom rules for output
       if cur_iface.has_key?("additional_output_rules")
-        cur_iface["additional_output_rules"].split("\n").each do |val|
-          yield "-A OUTPUT #{val}"
+        if cur_iface["additional_output_rules"].is_a?(Array)
+          cur_iface["additional_output_rules"].each do |val|
+            yield "-A OUTPUT #{val.strip}"
           end
+        elsif cur_iface["additional_output_rules"].is_a?(String)
+          cur_iface["additional_output_rules"].split("\n").each do |val|
+            yield "-A OUTPUT #{val.strip}"
+          end
+        else
+          raise "additional output rules are neither String nor Array"
+        end
       end
       # adding custom rules for input
       if cur_iface.has_key?("additional_input_rules")
-        cur_iface["additional_input_rules"].split("\n").each do |val|
-          yield "-A INPUT #{val}"
+        if cur_iface["additional_input_rules"].is_a?(Array)
+          cur_iface["additional_input_rules"].each do |val|
+            yield "-A INPUT #{val.strip}"
+          end
+        elsif cur_iface["additional_input_rules"].is_a?(String)
+          cur_iface["additional_input_rules"].split("\n").each do |val|
+            yield "-A INPUT #{val.strip}"
+          end
+        else
+          raise "additional input rules are neither String nor Array"
         end
       end
       # adding custom rules for forwarding
