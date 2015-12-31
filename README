@@ -11,10 +11,10 @@ possible. Thus, for packets that has been accepted, dropped, rejected
 etc. is configurable in both, global for all interfaces and for each 
 interface.
 
-The precicly configurable logging makes it more easy to detect
-anomalies by AI algorithms that analyze the iptables logfile.
-It has been developed in a students project at the university of
-bremen called FIDIUS.
+The precicly configurable logging makes it easier to detect anomalies 
+by AI algorithms that analyze the iptables logfile. 
+It has been developed in a students project at the Universität Bremen
+called FIDIUS.
 
 
 Configuration
@@ -35,12 +35,13 @@ ATTENTION for remote usage: ript will deny all communication by
 default. Please note that you have to allow all communication
 explicitly be every interface!
 A good start for testing your newly created ript.json is this command:
-ruby ript.rb && sleep 30 && sh ./reset.sh
+ruby ript.rb && sleep 10 && sh ./reset.sh
 After executing this command you should see the message
-"commited and saved iptables"
-If you don't you just have to wait about 30 seconds. After that the
-reset.sh file will change the iptables and ip6tables rules to allow
-all communication by default again. 
+"commited and saved iptables". If so, you can cancel the execution of 
+reset.sh with CTRL-C
+If you don't you just have to wait about 10 seconds. After that the
+reset.sh file will reset the iptables and ip6tables rules to allow all 
+communication by default again. 
 
 
 Files
@@ -51,8 +52,8 @@ ript.json.example	An example configuration file
 reset.sh		Shell script which resets all iptables and
 			ip6tables and sets INPUT, OUTPUT and FORWARD
 			to ACCEPT per default
-if-up.d/*		File for debian based linux systems. These
+if-up.d/*		File for linux based linux systems. These
 			files set up all iptables and ip6tables rules
-			on system restarted if configured in ript.json
+			on system restart if configured in ript.json
 
 
