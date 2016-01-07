@@ -3,7 +3,7 @@
     "iptables-save_bin": "/sbin/iptables-save",
     "ip6tables_bin": "/sbin/ip6tables",
     "ip6tables-save_bin": "/sbin/ip6tables-save",
-    "auto_commit_and_save_rules": "yes",
+    "auto_commit_and_save_rules": "no",
     "iptables_save_to": "/etc/iptables.rules",
     "ip6tables_save_to": "/etc/ip6tables.rules",
     "max_tcp_in_per_second": 10000,
