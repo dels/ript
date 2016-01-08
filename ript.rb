@@ -90,12 +90,12 @@ class Iptables
 
 
     @default_log_level = unless log_level then "5" else log_level end
-    @default_max_tcp_in_per_second = unless max_tcp_in_per_second then "10" else max_tcp_in_per_second end
-    @default_max_tcp_out_per_second = unless max_tcp_out_per_second then "100" else max_tcp_out_per_second end
-    @default_max_udp_in_per_second = unless max_udp_in_per_second then "10" else max_udp_in_per_second end
-    @default_max_udp_out_per_second = unless max_udp_out_per_second then "100" else max_udp_out_per_second end
-    @default_max_icmp_in_per_second = unless max_icmp_in_per_second then "10" else max_icmp_in_per_second end
-    @default_max_icmp_out_per_second = unless max_icmp_out_per_second then "10" else max_icmp_out_per_second end
+    @default_max_tcp_in_per_second = max_tcp_in_per_second
+    @default_max_tcp_out_per_second = max_tcp_out_per_second
+    @default_max_udp_in_per_second = max_udp_in_per_second
+    @default_max_udp_out_per_second = max_udp_out_per_second
+    @default_max_icmp_in_per_second = max_icmp_in_per_second
+    @default_max_icmp_out_per_second = max_icmp_out_per_second
     
     @f4_bin = @fw['iptables_bin']
     @f6_bin = @fw['ip6tables_bin']
@@ -438,7 +438,11 @@ class Iptables
     if cur_iface.has_key?("service_ports_tcp_in")
       cur_iface["service_ports_tcp_in"].split.each do |tcp_port|
         # create rule to allow syn packets in and established and related packets in and out for tcp on given tcp port, iface and address
-        yield "-A INPUT -p tcp -m limit --limit #{iface_settings[:max_tcp_in_per_second]}/second --limit-burst 10000 -m conntrack --ctstate NEW -i #{iface} #{dest_ip} --dport #{tcp_port} -j #{iface_settings[:log_syn_in]}"
+        if iface_settings[:max_tcp_in_per_second]
+          yield "-A INPUT -p tcp -m limit --limit #{iface_settings[:max_tcp_in_per_second]}/second --limit-burst 10000 -m conntrack --ctstate NEW -i #{iface} #{dest_ip} --dport #{tcp_port} -j #{iface_settings[:log_syn_in]}"
+        else
+          yield "-A INPUT -p tcp -m conntrack --ctstate NEW -i #{iface} #{dest_ip} --dport #{tcp_port} -j #{iface_settings[:log_syn_in]}"
+        end
         yield "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -i #{iface} #{dest_ip} --dport #{tcp_port} -j #{iface_settings[:log_established]}"
         yield "-A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -o #{iface} #{src_ip} --sport #{tcp_port} -j #{iface_settings[:log_established]}"
       end
@@ -446,7 +450,11 @@ class Iptables
     if cur_iface.has_key?("service_ports_udp_in")
       cur_iface["service_ports_udp_in"].split.each do |udp_port|
         # create rule to allow packets in and out for udp on given udp port, iface and address
-        yield "-A INPUT -p udp -m limit --limit #{iface_settings[:max_udp_in_per_second]}/second --limit-burst 10000 -i #{iface} #{dest_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_in]}"
+        if iface_settings[:max_udp_in_per_second]
+          yield "-A INPUT -p udp -m limit --limit #{iface_settings[:max_udp_in_per_second]}/second --limit-burst 10000 -i #{iface} #{dest_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_in]}"
+        else
+          yield "-A INPUT -p udp -i #{iface} #{dest_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_in]}"
+        end
         yield "-A OUTPUT -p udp -o #{iface} #{src_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
       end
     end
@@ -454,7 +462,11 @@ class Iptables
     if cur_iface.has_key?("service_ports_tcp_out")
       cur_iface["service_ports_tcp_out"].split.each do |tcp_port|
         # create rule to allow syn packets out and established and related packets in and out for tcp on given udp port, iface and address
-        yield "-A OUTPUT -p tcp -m limit --limit #{iface_settings[:max_tcp_out_per_second]}/second --limit-burst 10000 -m conntrack --ctstate NEW -o #{iface} #{src_ip} --dport #{tcp_port} -j #{iface_settings[:log_syn_out]}"
+        if iface_settings[:max_tcp_out_per_second]
+          yield "-A OUTPUT -p tcp -m limit --limit #{iface_settings[:max_tcp_out_per_second]}/second --limit-burst 10000 -m conntrack --ctstate NEW -o #{iface} #{src_ip} --dport #{tcp_port} -j #{iface_settings[:log_syn_out]}"
+        else
+          yield "-A OUTPUT -p tcp -m conntrack --ctstate NEW -o #{iface} #{src_ip} --dport #{tcp_port} -j #{iface_settings[:log_syn_out]}"
+        end
         yield "-A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -o #{iface} #{src_ip} --dport #{tcp_port} -j #{iface_settings[:log_established]}"
         yield "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -i #{iface} #{dest_ip} --sport #{tcp_port} -j #{iface_settings[:log_established]}"
       end
@@ -462,7 +474,11 @@ class Iptables
     if cur_iface.has_key?("service_ports_udp_out")
       cur_iface["service_ports_udp_out"].split.each do |udp_port|
         # create rule to allow packets in and out for udp on given udp port, iface and address
-        yield "-A OUTPUT -p udp -m limit --limit #{iface_settings[:max_udp_out_per_second]}/second --limit-burst 10000 -o #{iface} #{src_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_out]}"
+        if iface_settings[:max_udp_out_per_second]
+          yield "-A OUTPUT -p udp -m limit --limit #{iface_settings[:max_udp_out_per_second]}/second --limit-burst 10000 -o #{iface} #{src_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_out]}"
+        else
+          yield "-A OUTPUT -p udp -o #{iface} #{src_ip} --dport #{udp_port} -j #{iface_settings[:log_syn_out]}"
+        end
         yield "-A INPUT -p udp -i #{iface} #{dest_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
       end
     end
@@ -475,12 +491,20 @@ class Iptables
     # allow icmp traffic in and out
     if cur_iface.has_key?("allowed_icmp_types_in")
       cur_iface["allowed_icmp_types_in"].split.each do |icmp_type|
-        yield "-A INPUT #{ipv_depending_icmp_str} #{icmp_type} -i #{iface} -m limit --limit #{iface_settings[:max_icmp_in_per_second]}/minute --limit-burst 100 -j #{iface_settings[:log_icmp_in]}"
+          if iface_settings[:max_icmp_in_per_second]
+            yield "-A INPUT #{ipv_depending_icmp_str} #{icmp_type} -i #{iface} -m limit --limit #{iface_settings[:max_icmp_in_per_second]}/minute --limit-burst 100 -j #{iface_settings[:log_icmp_in]}"
+          else
+            yield "-A INPUT #{ipv_depending_icmp_str} #{icmp_type} -i #{iface} -j #{iface_settings[:log_icmp_in]}"
+          end
       end
     end
     if cur_iface.has_key?("allowed_icmp_types_out")
       cur_iface["allowed_icmp_types_out"].split.each do |icmp_type|
-        yield "-A OUTPUT #{ipv_depending_icmp_str} #{icmp_type} -o #{iface} -m limit --limit #{iface_settings[:max_icmp_out_per_second]}/minute --limit-burst 100 -j #{iface_settings[:log_icmp_out]}"
+          if iface_settings[:max_icmp_out_per_second]
+            yield "-A OUTPUT #{ipv_depending_icmp_str} #{icmp_type} -o #{iface} -m limit --limit #{iface_settings[:max_icmp_out_per_second]}/minute --limit-burst 100 -j #{iface_settings[:log_icmp_out]}"
+          else
+            yield "-A OUTPUT #{ipv_depending_icmp_str} #{icmp_type} -o #{iface} -j #{iface_settings[:log_icmp_out]}"
+          end
       end
     end
   end
