@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'open-uri'
-require './lib/ript_config'
+require_relative './lib/ript_config'
 
 CHAIN="blacklist"
 

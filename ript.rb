@@ -26,7 +26,7 @@
 # or implied, of Dominik Elsbroek. 
 
 require "json"
-require "./lib/ript_config"
+require_relative "./lib/ript_config"
 
 class Iptables
 
