@@ -5,7 +5,7 @@ require "json"
 class RIPTConfig
 
   def initialize(cfg=nil)
-    cfg ||= "#{Dir.pwd}/ript.json"
+    cfg ||= "#{File.dirname(__FILE__)}/../ript.json"
     # load config file
     raise "configuration file must be readable (#{cfg})" unless File.exist? cfg and File.file? cfg and File.readable? cfg
     raise "could not load configuration file" unless (@fw = JSON.parse(File.read(cfg)))
