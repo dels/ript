@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 
 require 'open-uri'
-require_relative './lib/ript_config'
+require_relative '../lib/ript_config'
 
-CHAIN="blacklist"
+CHAIN_NAME="blacklist"
 
 def init
   @fw = RIPTConfig.new(ARGV[0])
@@ -28,13 +28,13 @@ def blacklist_exists?
 end
 
 def update_chain
-  yield "-N #{CHAIN}" unless blacklist_exists?
-  yield "-I INPUT -j #{CHAIN}" unless input_knows_blacklist?
-  yield "-F #{CHAIN}"
+  yield "-N #{CHAIN_NAME}" unless blacklist_exists?
+  yield "-I INPUT -j #{CHAIN_NAME}" unless input_knows_blacklist?
+  yield "-F #{CHAIN_NAME}"
   open(@url) do |io|
     io.read.split(/\n/).each do |line|
       next unless line.match(/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/)
-      yield "-A #{CHAIN} -s #{line} -j DROP"
+      yield "-A #{CHAIN_NAME} -s #{line} -j DROP"
     end
   end
 end
