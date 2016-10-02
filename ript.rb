@@ -59,8 +59,8 @@ class Iptables
   
   #
   def initialize cfg
-  
-    @fw = RIPTConfig.new(cfg).conf
+
+    @fw = RIPTConfig.new(cfg)
     @f4 = []
     @f6 = []
 
@@ -68,22 +68,22 @@ class Iptables
     @list_of_devices = []
 
     # read and set basic settings
-    log_level = @fw['log_level']
-    max_tcp_in_per_second = @fw['max_tcp_in_per_second']
-    max_udp_in_per_second  = @fw['max_udp_in_per_second']
-    max_icmp_in_per_second = @fw['max_icmp_in_per_second']
-    max_tcp_out_per_second = @fw['max_tcp_out_per_second']
-    max_udp_out_per_second  = @fw['max_udp_out_per_second']
-    max_icmp_out_per_second = @fw['max_icmp_out_per_second']
+    log_level = @fw.conf['log_level']
+    max_tcp_in_per_second = @fw.conf['max_tcp_in_per_second']
+    max_udp_in_per_second  = @fw.conf['max_udp_in_per_second']
+    max_icmp_in_per_second = @fw.conf['max_icmp_in_per_second']
+    max_tcp_out_per_second = @fw.conf['max_tcp_out_per_second']
+    max_udp_out_per_second  = @fw.conf['max_udp_out_per_second']
+    max_icmp_out_per_second = @fw.conf['max_icmp_out_per_second']
     
-    @default_log_syn_in = if @fw.has_key?('log_syn_in') && @fw['log_syn_in'].eql?("yes") then true else false end
-    @default_log_syn_out = if @fw.has_key?('log_syn_out') && @fw['log_syn_out'].eql?("yes") then true else false end
-    @default_log_established = if @fw.has_key?('log_established') && @fw['log_established'].eql?("yes") then true else false end
-    @default_log_drop = if @fw.has_key?('log_drop') && @fw['log_drop'].eql?("yes") then true else false end
-    @default_log_rejected = if @fw.has_key?('log_rejected') && @fw['log_rejected'].eql?("yes") then true else false end
-    @default_log_invalid = if @fw.has_key?('log_invalid') && @fw['log_invalid'].eql?("yes") then true else false end
-    @default_log_icmp_in = if @fw.has_key?('log_icmp_in') && @fw['log_icmp_in'].eql?("yes") then true else false end
-    @default_log_icmp_out = if @fw.has_key?('log_icmp_out') && @fw['log_icmp_out'].eql?("yes") then true else false end
+    @default_log_syn_in = if @fw.conf.has_key?('log_syn_in') && @fw.conf['log_syn_in'].eql?("yes") then true else false end
+    @default_log_syn_out = if @fw.conf.has_key?('log_syn_out') && @fw.conf['log_syn_out'].eql?("yes") then true else false end
+    @default_log_established = if @fw.conf.has_key?('log_established') && @fw.conf['log_established'].eql?("yes") then true else false end
+    @default_log_drop = if @fw.conf.has_key?('log_drop') && @fw.conf['log_drop'].eql?("yes") then true else false end
+    @default_log_rejected = if @fw.conf.has_key?('log_rejected') && @fw.conf['log_rejected'].eql?("yes") then true else false end
+    @default_log_invalid = if @fw.conf.has_key?('log_invalid') && @fw.conf['log_invalid'].eql?("yes") then true else false end
+    @default_log_icmp_in = if @fw.conf.has_key?('log_icmp_in') && @fw.conf['log_icmp_in'].eql?("yes") then true else false end
+    @default_log_icmp_out = if @fw.conf.has_key?('log_icmp_out') && @fw.conf['log_icmp_out'].eql?("yes") then true else false end
 
 
     @default_log_level = unless log_level then "5" else log_level end
@@ -93,9 +93,6 @@ class Iptables
     @default_max_udp_out_per_second = max_udp_out_per_second
     @default_max_icmp_in_per_second = max_icmp_in_per_second
     @default_max_icmp_out_per_second = max_icmp_out_per_second
-    
-    @f4_bin = @fw['iptables_bin']
-    @f6_bin = @fw['ip6tables_bin']
     
     # add the initial rules
     @f4.concat initialize_rules
@@ -119,7 +116,7 @@ class Iptables
 
     # allow localhost communication if desired
     @list_of_devices.uniq!
-    if @fw['allow_localhost_communication'].eql?("yes")
+    if @fw.conf['allow_localhost_communication'].eql?("yes")
       @f4 << "-A INPUT -i lo -j ACCEPT"
       @f6 << "-A INPUT -i lo -j ACCEPT"
       @f4 << "-A OUTPUT -o lo -j ACCEPT"
@@ -132,9 +129,9 @@ class Iptables
   #
   def create_deny_rules ipv, iface = nil, iface_settings = nil
     if iface 
-      cur_iface = @fw[ipv][iface]
+      cur_iface = @fw.conf[ipv][iface]
     else
-      cur_iface = @fw
+      cur_iface = @fw.conf
     end
     my_rules_arr = if ipv.eql? "ipv4" then
                      @f4
@@ -154,7 +151,7 @@ class Iptables
     deny_with = if cur_iface.has_key?("deny_with") then
                   cur_iface["deny_with"].upcase
                 else
-                  @fw["deny_with"].upcase
+                  @fw.conf["deny_with"].upcase
                 end
     reject_with = if cur_iface.has_key?("reject_with") then
                     " --reject_with " <<  cur_iface["reject_with"].upcase
@@ -200,11 +197,11 @@ class Iptables
 
   #
   def create_rules_for ipv
-    @fw[ipv].each do |interface|
+    @fw.conf[ipv].each do |interface|
       iface = interface[0]
       @list_of_devices << iface
       cur_rule = "#{ipv}-#{iface}"
-      cur_iface = @fw[ipv][iface]
+      cur_iface = @fw.conf[ipv][iface]
       yield "-N #{cur_rule}"
       yield "-F #{cur_rule}"
 =begin
@@ -430,8 +427,8 @@ class Iptables
   
   #
   def create_rules_for_ip iface_settings, ipv, iface, src_ip = nil, dest_ip = nil
-    cur_iface = @fw[ipv][iface]
-    # allow incoming traffic on ports in @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.select("/#{ipv}/#{iface}/service_ports_udp_out")
+    cur_iface = @fw.conf[ipv][iface]
+    # allow incoming traffic on ports in @fw.conf.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.conf.select("/#{ipv}/#{iface}/service_ports_udp_out")
     if cur_iface.has_key?("service_ports_tcp_in")
       cur_iface["service_ports_tcp_in"].split.each do |tcp_port|
         # create rule to allow syn packets in and established and related packets in and out for tcp on given tcp port, iface and address
@@ -455,7 +452,7 @@ class Iptables
         yield "-A OUTPUT -p udp -o #{iface} #{src_ip} --sport #{udp_port} -j #{iface_settings[:log_established]}"
       end
     end
-    # allow outgoing traffic on ports in @fw.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.select("/#{ipv}/#{iface}/service_ports_udp_out")
+    # allow outgoing traffic on ports in @fw.conf.select("/#{ipv}/#{iface}/service_ports_tcp_out") and @fw.conf.select("/#{ipv}/#{iface}/service_ports_udp_out")
     if cur_iface.has_key?("service_ports_tcp_out")
       cur_iface["service_ports_tcp_out"].split.each do |tcp_port|
         # create rule to allow syn packets out and established and related packets in and out for tcp on given udp port, iface and address
@@ -562,21 +559,21 @@ class Iptables
 
   #
   def to_s
-    if @fw.has_key?("auto_commit_and_save_rules") and @fw["auto_commit_and_save_rules"].eql?("yes")
+    if @fw.conf.has_key?("auto_commit_and_save_rules") and @fw.conf["auto_commit_and_save_rules"].eql?("yes")
       # get settings from config
-      ipt_save_bin = @fw["iptables-save_bin"]
-      ip6t_save_bin = @fw["ip6tables-save_bin"]
-      ipt_save_to = @fw["iptables_save_to"]
-      ip6t_save_to = @fw["ip6tables_save_to"]
+      ipt_save_bin = @fw.conf["iptables-save_bin"]
+      ip6t_save_bin = @fw.conf["ip6tables-save_bin"]
+      ipt_save_to = @fw.conf["iptables_save_to"]
+      ip6t_save_to = @fw.conf["ip6tables_save_to"]
       # execute rules
       configure_system do |sys|
         system("#{sys}")
       end
       @f4.each do |rule|
-        system("#{@f4_bin} #{rule}")
+        system("#{@fw.f4_bin} #{rule}")
       end
       @f6.each do |rule|
-        system("#{@f6_bin} #{rule}")
+        system("#{@fw.f6_bin} #{rule}")
       end
       # save rules
       system("#{ipt_save_bin} > #{ipt_save_to}")
@@ -589,11 +586,11 @@ class Iptables
       res << "#{sys}\n"
     end
     @f4.each do |rule|
-      res << "#{@f4_bin} #{rule}\n"
+      res << "#{@fw.f4_bin} #{rule}\n"
     end
     res << "\n# printing ip6tables\n\n"
     @f6.each do |rule|
-      res << "#{@f6_bin} #{rule}\n"
+      res << "#{@fw.f6_bin} #{rule}\n"
     end
     res
   end

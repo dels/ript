@@ -16,6 +16,16 @@ class RIPTConfig
     @fw
   end
 
+  def f4_bin
+    @f4_bin = @fw['iptables_bin'] unless  @f4_bin
+    @f4_bin
+  end
+
+  def f6_bin
+    @f6_bin = @fw['ip6tables_bin'] unless @f6_bin
+    @f6_bin
+  end
+  
 end
 
 
