@@ -1,0 +1,3 @@
+#!/bin/sh
+
+ruby /root/git/dev/ript/update_blacklist.rb
