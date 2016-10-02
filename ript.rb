@@ -26,9 +26,9 @@
 # or implied, of Dominik Elsbroek. 
 
 require "json"
+require "./lib/ript_config"
 
 class Iptables
-
 
   def configure_system
     # we dont need timestamps in tcp
@@ -59,16 +59,13 @@ class Iptables
   
   #
   def initialize cfg
-    cfg ||= "./ript.json"
+  
+    @fw = RIPTConfig.new(cfg).conf
     @f4 = []
     @f6 = []
-    # load config file
-    raise "configuration file must be readable" unless File.exist? cfg and File.file? cfg and File.readable? cfg
-    raise "could not load configuration file" unless (@fw = JSON.parse(File.read(cfg)))
 
     # we need to have a list of all devices. we will get this list while going through the ip versions
     @list_of_devices = []
-
 
     # read and set basic settings
     log_level = @fw['log_level']
